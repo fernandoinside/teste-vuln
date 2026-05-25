@@ -2,75 +2,166 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laboratório XSS Vulnerável</title>
+    <title>XSS Lab Completo</title>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #1e1e1e;
-            color: white;
-            padding: 40px;
+        body{
+            background:#111;
+            color:#0f0;
+            font-family:monospace;
+            padding:30px;
         }
 
-        .box {
-            background: #2d2d2d;
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 600px;
-            margin: auto;
+        .box{
+            border:1px solid #0f0;
+            padding:20px;
+            margin-bottom:20px;
         }
 
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
+        input, textarea{
+            width:100%;
+            background:#000;
+            color:#0f0;
+            border:1px solid #0f0;
+            padding:10px;
+            margin-top:10px;
         }
 
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background: #ff4444;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        button{
+            margin-top:10px;
+            padding:10px;
+            background:#0f0;
+            color:#000;
+            border:none;
+            cursor:pointer;
         }
 
-        #resultado {
-            margin-top: 20px;
-            padding: 15px;
-            background: #111;
-            border-radius: 5px;
+        iframe{
+            width:100%;
+            height:200px;
+            background:white;
+            margin-top:10px;
         }
     </style>
 </head>
 <body>
 
+<h1>XSS Vulnerable Lab</h1>
+
+<!-- REFLECTED XSS -->
 <div class="box">
-    <h1>Laboratório XSS</h1>
+    <h2>1. Reflected XSS</h2>
 
-    <p>Digite qualquer texto:</p>
+    <input type="text" id="reflectedInput" placeholder="Digite payload XSS">
 
-    <input type="text" id="entrada" placeholder="Digite aqui">
+    <button onclick="reflectedXSS()">
+        Executar
+    </button>
 
-    <button onclick="mostrar()">Enviar</button>
+    <div id="reflectedOutput"></div>
+</div>
 
-    <div id="resultado"></div>
+<!-- STORED XSS -->
+<div class="box">
+    <h2>2. Stored XSS</h2>
+
+    <textarea id="storedInput" placeholder="Digite payload persistente"></textarea>
+
+    <button onclick="storedXSS()">
+        Salvar Payload
+    </button>
+
+    <div id="storedOutput"></div>
+</div>
+
+<!-- DOM XSS -->
+<div class="box">
+    <h2>3. DOM XSS</h2>
+
+    <p>
+        Adicione na URL:
+    </p>
+
+    <pre>
+#&lt;script&gt;alert('DOM XSS')&lt;/script&gt;
+    </pre>
+
+    <div id="domOutput"></div>
+</div>
+
+<!-- IFRAME XSS -->
+<div class="box">
+    <h2>4. iframe Injection</h2>
+
+    <textarea id="frameInput" placeholder="HTML para iframe"></textarea>
+
+    <button onclick="iframeXSS()">
+        Carregar iframe
+    </button>
+
+    <iframe id="frame"></iframe>
 </div>
 
 <script>
-    function mostrar() {
 
-        // VULNERABILIDADE XSS:
-        // Entrada do usuário inserida diretamente no innerHTML
+/* =========================
+   REFLECTED XSS
+========================= */
 
-        let valor = document.getElementById("entrada").value;
+function reflectedXSS(){
 
-        document.getElementById("resultado").innerHTML =
-            "Você digitou: " + valor;
-    }
+    let payload =
+        document.getElementById("reflectedInput").value;
+
+    document.getElementById("reflectedOutput").innerHTML =
+        payload;
+}
+
+/* =========================
+   STORED XSS
+========================= */
+
+function storedXSS(){
+
+    let payload =
+        document.getElementById("storedInput").value;
+
+    localStorage.setItem(
+        "stored_payload",
+        payload
+    );
+
+    loadStored();
+}
+
+function loadStored(){
+
+    document.getElementById("storedOutput").innerHTML =
+        localStorage.getItem("stored_payload") || "";
+}
+
+loadStored();
+
+/* =========================
+   DOM XSS
+========================= */
+
+document.getElementById("domOutput").innerHTML =
+    decodeURIComponent(location.hash.substring(1));
+
+/* =========================
+   IFRAME XSS
+========================= */
+
+function iframeXSS(){
+
+    let payload =
+        document.getElementById("frameInput").value;
+
+    document.getElementById("frame").srcdoc =
+        payload;
+}
+
 </script>
 
 </body>
